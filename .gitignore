@@ -1,6 +1,9 @@
 #Zip
 *.zip
 
+#venv file
+rossmann/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
