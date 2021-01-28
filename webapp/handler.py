@@ -5,35 +5,36 @@ from flask import Flask, request, Response
 from rossmann.Rossmann import Rossmann
 
 
+
 # Loding Model
-model = pickle.load(open('model/modelRossmann.pkl', 'rb'))
+model = pickle.load(open('model/1_flc_xgb_tuned.pkl', 'rb'))
 
 # Initialize API
 app = Flask(__name__)
 
 @app.route('/rossmann/predict', methods=['POST'])
 def rossmanPredict():
-    testJSON = request.get_json()
+    test_JSON = request.get_json()
     
-    if testJSON: #there is data
-        if isinstance(testJSON, dict):
-            testeRaw = pd.DataFrame(testJSON, index=[0]) #unique example
+    if test_JSON: #there is data
+        if isinstance(test_JSON, dict):
+            teste_raw = pd.DataFrame(test_JSON, index=[0]) #unique example
         else:
-            testeRaw = pd.DataFrame(testJSON, columns=testJSON[0].keys()) #multiple examples
+            teste_raw = pd.DataFrame(test_JSON, columns=test_JSON[0].keys()) #multiple examples
     
         # Instantiate
         pipeline = Rossmann()
         
         # Data Cleaning
-        df1 = pipeline.dataCleaning(testeRaw)
+        df1 = pipeline.data_cleaning(teste_raw)
         # Feature Engineering
-        df2 = pipeline.featureEngineering(df1)
+        df2 = pipeline.feature_engineering(df1)
         # Data Preparation
-        df3 = pipeline.dataPreparation(df2)
+        df3 = pipeline.data_preparation(df2)
         # Prediction
-        dfResponse = pipeline.getPrediction(model, testeRaw, df3)
+        df_response = pipeline.get_prediction(model, teste_raw, df3)
         
-        return dfResponse
+        return df_response
     
     else:
         return Response('{}', status=200, mimetype='application/json')

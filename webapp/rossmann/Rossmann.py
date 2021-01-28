@@ -2,186 +2,198 @@ import pickle
 import pandas as pd
 import numpy as np
 import math
+import inflection
 import datetime
+
 
 
 
 class Rossmann(object):
 	def __init__(self):
 		self.home_path = ''
-		self.competitionDistanceScaler = pickle.load(open(self.home_path + 'parameter/CompetitionDistanceScaler.pkl', 'rb'))
-		self.competionTimeMonthScaler =  pickle.load(open(self.home_path + 'parameter/CompetionTimeMonthScaler.pkl', 'rb'))
-		self.promoTimeWeekScaler =       pickle.load(open(self.home_path + 'parameter/PromoTimeWeekScaler.pkl', 'rb'))
-		self.yearScaler =                pickle.load(open(self.home_path + 'parameter/YearScaler.pkl', 'rb'))
-		self.storeTypeScaler =           pickle.load(open(self.home_path + 'parameter/StoreTypeScaler.pkl', 'rb'))
+		self.competition_distance_scaler = pickle.load(open(self.home_path + 'parameter/1-competition_distance_scaler.pkl', 'rb'))
+		self.competion_time_month_scaler = pickle.load(open(self.home_path + 'parameter/1-competion_time_month_scaler.pkl', 'rb'))
+		self.promo_time_week_scaler      = pickle.load(open(self.home_path + 'parameter/1-promo_time_week_scaler.pkl', 'rb'))
+		self.year_scaler                 = pickle.load(open(self.home_path + 'parameter/1-year_scaler.pkl', 'rb'))
+		self.store_type_scaler           = pickle.load(open(self.home_path + 'parameter/1-store_type_scaler.pkl', 'rb'))
 		
 		
+	def rename_columns(self, df1):
+		# snakecase
+		snakecase = lambda col: inflection.underscore(col)
+		new_columns = list(map(snakecase, df1.columns))
+
+		# rename
+		df1.columns = new_columns
+		return df1
 		
-		
-	def dataCleaning(self, df1):
+	
+
+	def data_cleaning(self, df1):
+
+		df1 = Rossmann.rename_columns(self, df1)
 
 		## Data Types
-		df1['Date'] = pd.to_datetime(df1['Date'])
+		df1['date'] = pd.to_datetime(df1['date'])
 
 		## Fillout NA
-		# CompetitionDistance
+		# competition_distance
 			#distance in meters to the nearest competitor store
-		df1['CompetitionDistance'] = df1['CompetitionDistance'].apply(lambda row: 200000.0 if math.isnan(row) else row)
+		df1['competition_distance'] = df1['competition_distance'].apply(lambda row: 200000.0 if math.isnan(row) else row)
 
 
-		# CompetitionOpenSinceMonth
+		# competition_open_since_month
 			#gives the approximate month of the time the nearest competitor was opened
-		df1['CompetitionOpenSinceMonth'] = df1.apply(lambda row: row['Date'].month if math.isnan(row['CompetitionOpenSinceMonth']) else row['CompetitionOpenSinceMonth'], axis=1)
+		df1['competition_open_since_month'] = df1.apply(lambda row: row['date'].month if math.isnan(row['competition_open_since_month']) else row['competition_open_since_month'], axis=1)
 
 
 		# CompetitionOpenSinceYear
 			# gives the approximate year of the time the nearest competitor was opened
-		df1['CompetitionOpenSinceYear'] = df1.apply(lambda row: row['Date'].year if math.isnan(row['CompetitionOpenSinceYear']) else row['CompetitionOpenSinceYear'], axis=1)
+		df1['competition_open_since_year'] = df1.apply(lambda row: row['date'].year if math.isnan(row['competition_open_since_year']) else row['competition_open_since_year'], axis=1)
 
 
-		# Promo2SinceWeek
+		# promo2_since_week Date
 			#describes the calendar week when the store started participating in Promo2
-		df1['Promo2SinceWeek'] = df1.apply(lambda row: row['Date'].week if math.isnan(row['Promo2SinceWeek']) else row['Promo2SinceWeek'], axis=1)
+		df1['promo2_since_week'] = df1.apply(lambda row: row['date'].week if math.isnan(row['promo2_since_week']) else row['promo2_since_week'], axis=1)
 
 
-		# Promo2SinceYear
+		# promo2_since_year
 			#describes the year when the store started participating in Promo2
-		df1['Promo2SinceYear'] = df1.apply(lambda row: row['Date'].year if math.isnan(row['Promo2SinceYear']) else row['Promo2SinceYear'], axis=1)
+		df1['promo2_since_year'] = df1.apply(lambda row: row['date'].year if math.isnan(row['promo2_since_year']) else row['promo2_since_year'], axis=1)
 
 
-		# PromoInterval
+		# promo_interval
 			#describes the consecutive intervals Promo2 is started, naming the months the promotion is started anew.\
 			#E.g. "Feb,May,Aug,Nov" means each round starts in February, May, August, November of any given year for that store
-		monthMap = {
+		month_map = {
 						1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun', 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
 					}
 
-		df1['PromoInterval'].fillna(0, inplace=True)
-		df1['MonthMap'] = df1['Date'].dt.month.map(monthMap)
+		df1['promo_interval'].fillna(0, inplace=True)
+		df1['month_map'] = df1['date'].dt.month.map(month_map)
 
-		df1['IsPromo'] = df1[['PromoInterval', 'MonthMap']].apply(lambda row: 0 if row['PromoInterval'] == 0 else 1 if row['MonthMap'] in row['PromoInterval'].split(',') else 0, axis=1)
+		df1['is_promo'] = df1[['promo_interval', 'month_map']].apply(lambda row: 0 if row['promo_interval'] == 0 else 1 if row['month_map'] in row['promo_interval'].split(',') else 0, axis=1)
 
 		# competiton
-		df1['CompetitionOpenSinceMonth'] = df1['CompetitionOpenSinceMonth'].astype(int)
-		df1['CompetitionOpenSinceYear'] = df1['CompetitionOpenSinceYear'].astype(int)
+		df1['competition_open_since_month'] = df1['competition_open_since_month'].astype(int)
+		df1['competition_open_since_year'] = df1['competition_open_since_year'].astype(int)
 
 		# promo2
-		df1['Promo2SinceWeek'] = df1['Promo2SinceWeek'].astype(int)
-		df1['Promo2SinceYear'] = df1['Promo2SinceYear'].astype(int)
+		df1['promo2_since_week'] = df1['promo2_since_week'].astype(int)
+		df1['promo2_since_year'] = df1['promo2_since_year'].astype(int)
 
 		return df1
 	
 	
 	
 	
-	def featureEngineering(self, df2):
+	def feature_engineering(self, df2):
 
 		#year
-		df2['Year'] = df2['Date'].dt.year
+		df2['year'] = df2['date'].dt.year
 
 		#month
-		df2['Month'] = df2['Date'].dt.month
+		df2['month'] = df2['date'].dt.month
 
 		#day
-		df2['Day'] = df2['Date'].dt.day
+		df2['day'] = df2['date'].dt.day
 
 		#week of year
-		df2['WeekOfYear'] = df2['Date'].dt.weekofyear
+		df2['week_of_year'] = df2['date'].dt.weekofyear
 
 		#year week
-		df2['YearWeek'] = df2['Date'].dt.strftime('%Y-%W')
+		df2['year_week'] = df2['date'].dt.strftime('%Y-%W')
 
 		#Competion Sinse
-		df2['CompetionSinse'] = df2.apply(lambda row: datetime.datetime(year=row['CompetitionOpenSinceYear'], month=row['CompetitionOpenSinceMonth'], day=1), axis=1)
-		df2['CompetionTimeMonth'] = ((df2['Date'] - df2['CompetionSinse'])/30).apply(lambda row: row.days).astype(int)
+		df2['competion_sinse'] = df2.apply(lambda row: datetime.datetime(year=row['competition_open_since_year'], month=row['competition_open_since_month'], day=1), axis=1)
+		df2['competion_time_month'] = ((df2['date'] - df2['competion_sinse'])/30).apply(lambda row: row.days).astype(int)
 
 		#Promo Since
-		df2['PromoSince'] = df2['Promo2SinceYear'].astype(str) + '-' + df2['Promo2SinceWeek'].astype(str)
-		df2['PromoSince'] = df2['PromoSince'].apply(lambda row: datetime.datetime.strptime(row + '-1',  '%Y-%W-%w') - datetime.timedelta(days=7))
-		df2['PromoTimeWeek'] = ((df2['Date'] - df2['PromoSince'])/7).apply(lambda row: row.days).astype(int)
+		df2['promo_since'] = df2['promo2_since_year'].astype(str) + '-' + df2['promo2_since_week'].astype(str)
+		df2['promo_since'] = df2['promo_since'].apply(lambda row: datetime.datetime.strptime(row + '-1',  '%Y-%W-%w') - datetime.timedelta(days=7))
+		df2['promo_time_week'] = ((df2['date'] - df2['promo_since'])/7).apply(lambda row: row.days).astype(int)
 
 		#Assortment (level: a = basic, b = extra, c = extended)
 		level = {
 			'a' : 'basic', 'b' : 'extra', 'c' : 'extended'
 		}
-		df2['Assortment'] = df2['Assortment'].map(level)
+		df2['assortment'] = df2['assortment'].map(level)
 
 		# State Holiday (a = public holiday, b = Easter holiday, c = Christmas, 0 = None)
 		holiday = {
 			'a' : 'public holiday', 'b' : 'Easter holiday', 'c' : 'Christmas'
 		}
-		df2['StateHoliday'] = df2['StateHoliday'].map(holiday)
-		df2['StateHoliday'].fillna('Regular Day', inplace=True)
+		df2['state_holiday'] = df2['state_holiday'].map(holiday)
+		df2['state_holiday'].fillna('regular day', inplace=True)
 
 		## Row Fitering
-		df2 = df2[df2['Open'] != 0]
+		df2 = df2[df2['open'] != 0]
 
 		## Columns Filtering
-		toDrop = ['Open', 'PromoInterval', 'MonthMap']
+		toDrop = ['open', 'promo_interval', 'month_map']
 		df2.drop(toDrop, axis=1, inplace=True)
 
 		return df2
 	
 	
-	
 
-	def dataPreparation(self, df3):
+	def data_preparation(self, df3):
 
 		#Competion Distance >> Presence of well defined outiliers
-		df3['CompetitionDistance'] = self.competitionDistanceScaler.fit_transform(df3[['CompetitionDistance']].values)
+		df3['competition_distance'] = self.competition_distance_scaler.fit_transform(df3[['competition_distance']].values)
 
 		#Competion Time Month >> Presence of well defined outiliers
-		df3['CompetionTimeMonth'] = self.competionTimeMonthScaler.fit_transform(df3[['CompetionTimeMonth']].values)
+		df3['competion_time_month'] = self.competion_time_month_scaler.fit_transform(df3[['competion_time_month']].values)
 
 		#Promo Time Week
-		df3['PromoTimeWeek'] = self.promoTimeWeekScaler.fit_transform(df3[['PromoTimeWeek']].values)
+		df3['promo_time_week'] = self.promo_time_week_scaler.fit_transform(df3[['promo_time_week']].values)
 
 		#Year
-		df3['Year'] = self.yearScaler.fit_transform(df3[['Year']].values)
+		df3['year'] = self.year_scaler.fit_transform(df3[['year']].values)
 
 		### Encoding
 		#State Holiday -> One Hot Encoding
-		df3 = pd.get_dummies(df3, prefix=['StateHoliday'], columns=['StateHoliday'])
+		df3 = pd.get_dummies(df3, prefix=['state_holiday'], columns=['state_holiday'])
 
 		#Store Type -> Label Encoding
-		df3['StoreType'] = self.storeTypeScaler.fit_transform(df3['StoreType'])
+		df3['store_type'] = self.store_type_scaler.fit_transform(df3['store_type'])
 
 		#Assortment -> Ordinal Encoding
-		dictAssortment = {
+		dict_assortment = {
 							'basic': 1,
 							'extra': 2,
 							'extended': 3
 							}
-		df3['Assortment'] = df3['Assortment'].map(dictAssortment)
+		df3['assortment'] = df3['assortment'].map(dict_assortment)
 
 		### Nature Transformation
 		#Month
-		df3['MonthSin'] = df3['Month'].apply(lambda row: np.sin(row * (2 * np.pi/12)))
-		df3['MonthCos'] = df3['Month'].apply(lambda row: np.cos(row * (2 * np.pi/12)))
+		df3['month_sin'] = df3['month'].apply(lambda row: np.sin(row * (2 * np.pi/12)))
+		df3['month_cos'] = df3['month'].apply(lambda row: np.cos(row * (2 * np.pi/12)))
 		#Day
-		df3['DaySin'] = df3['Day'].apply(lambda row: np.sin(row * (2 * np.pi/30)))
-		df3['DayCos'] = df3['Day'].apply(lambda row: np.cos(row * (2 * np.pi/30)))
+		df3['day_sin'] = df3['day'].apply(lambda row: np.sin(row * (2 * np.pi/30)))
+		df3['day_cos'] = df3['day'].apply(lambda row: np.cos(row * (2 * np.pi/30)))
 		#Week of Year
-		df3['WeekOfYearSin'] = df3['WeekOfYear'].apply(lambda row: np.sin(row * (2 * np.pi/52)))
-		df3['WeekOfYearCos'] = df3['WeekOfYear'].apply(lambda row: np.cos(row * (2 * np.pi/52)))
+		df3['week_of_year_sin'] = df3['week_of_year'].apply(lambda row: np.sin(row * (2 * np.pi/52)))
+		df3['week_of_year_cos'] = df3['week_of_year'].apply(lambda row: np.cos(row * (2 * np.pi/52)))
 		#Day of Week
-		df3['DayOfWeekSin'] = df3['DayOfWeek'].apply(lambda row: np.sin(row * (2 * np.pi/7)))
-		df3['DayOfWeekCos'] = df3['DayOfWeek'].apply(lambda row: np.cos(row * (2 * np.pi/7)))
+		df3['day_of_week_sin'] = df3['day_of_week'].apply(lambda row: np.sin(row * (2 * np.pi/7)))
+		df3['day_of_week_cos'] = df3['day_of_week'].apply(lambda row: np.cos(row * (2 * np.pi/7)))
 
-		colsSelected = ['Store','Promo','StoreType','Assortment','CompetitionDistance','CompetitionOpenSinceMonth',
-								'CompetitionOpenSinceYear','Promo2','Promo2SinceWeek','Promo2SinceYear','CompetionTimeMonth',
-								'PromoTimeWeek','MonthSin','MonthCos','DaySin','DayCos','WeekOfYearSin','WeekOfYearCos','DayOfWeekSin',
-								'DayOfWeekCos']
+		cols_selected = ['store','promo','store_type','assortment','competition_distance','competition_open_since_month',
+								'competition_open_since_year','promo2','promo2_since_week','promo2_since_year','competion_time_month',
+								'promo_time_week','month_sin','month_cos','day_sin','day_cos','week_of_year_sin','week_of_year_cos',
+								'day_of_week_sin','day_of_week_cos']
 
-		return df3[colsSelected]
+		return df3[cols_selected]
 
 
 	
-	def getPrediction(self, model, originalData, testData):
+	def get_prediction(self, model, original_data, test_data):
 		# Prediction
-		pred = model.predict(testData)
+		pred = model.predict(test_data)
 
 		# Join pred into original Data
-		originalData['Prediction'] = np.expm1(pred)
+		original_data['prediction'] = np.expm1(pred)
 
-		return originalData.to_json(orient='records', date_format='iso')
+		return original_data.to_json(orient='records', date_format='iso')
