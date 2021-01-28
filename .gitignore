@@ -6,7 +6,7 @@ rossmann/*
 .virtual_documents/*
 
 #Results .csv
-01-Data/Results/*
+01-Data/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
